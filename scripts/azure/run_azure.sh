@@ -20,7 +20,7 @@ done
 echo "Started at `date`"
 
 # echo "Bootstrapping azure controller and deploying cluster..."
-# terragrunt stack run apply --non-interactive --working-dir "${STACK_DIR}"
+terragrunt stack run apply --non-interactive --working-dir "${STACK_DIR}"
 
 # Set up temporary Juju CLI access to the bootstrapped controller. The
 # setup command only exports JUJU_DATA (the `juju login` part is dropped);
@@ -118,19 +118,19 @@ echo  "Copying back test outputs..."
 juju scp -- -i "${SSH_KEY_PATH}" -r login/leader:/nfs/home/charmed-hpc-benchmarks/perflogs .
 juju scp -- -i "${SSH_KEY_PATH}" -r login/leader:/nfs/home/charmed-hpc-benchmarks/output .
 
-# echo "Destroying cluster and controller..."
-# # Retry destroy command on failure. Can happen if a VM is still using nfs-vnet when attempt to
-# # destroy it occurs. TODO: confirm if race condition/bug in Juju provider.
-# retries=0
-# max_retries=5
-# retry_timer=60
-# while ! terragrunt stack run destroy --non-interactive --working-dir "${STACK_DIR}" && [ $retries -lt $max_retries ]; do
-#     retries=$((retries+1))
-#     echo "Attempt $retries failed. Retrying in $retry_timer seconds..."
-#     sleep $retry_timer
-# done
+echo "Destroying cluster and controller..."
+# Retry destroy command on failure. Can happen if a VM is still using nfs-vnet when attempt to
+# destroy it occurs. TODO: confirm if race condition/bug in Juju provider.
+retries=0
+max_retries=5
+retry_timer=60
+while ! terragrunt stack run destroy --non-interactive --working-dir "${STACK_DIR}" && [ $retries -lt $max_retries ]; do
+    retries=$((retries+1))
+    echo "Attempt $retries failed. Retrying in $retry_timer seconds..."
+    sleep $retry_timer
+done
 
-# echo "Deleting temporary SSH key pair at: ${SSH_KEY_PATH}..."
-# rm -f "${SSH_KEY_PATH}" "${SSH_KEY_PATH}.pub"
+echo "Deleting temporary SSH key pair at: ${SSH_KEY_PATH}..."
+rm -f "${SSH_KEY_PATH}" "${SSH_KEY_PATH}.pub"
 
 echo "Tests completed at `date`. Check output and perflogs directories for results."
