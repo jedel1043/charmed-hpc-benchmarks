@@ -18,3 +18,9 @@ output "subnet_info" {
     virtual_network_name = azurerm_subnet.nfs-subnet.virtual_network_name
   }
 }
+
+output "ssh_private_key" {
+  description = "PEM private key of the SSH key pair registered in the Juju model."
+  value       = tls_private_key.benchmark.private_key_openssh
+  sensitive   = true
+}

@@ -271,3 +271,60 @@ CERT
     }
   }
 }
+
+# Package installation on the deployed machines. Runs after the cluster is
+# up; waits for each application's units to have started agents before
+# installing (see units/packages/main.tf).
+unit "packages" {
+  source = "${get_path_to_repo_root()}/units/packages"
+  path   = "packages"
+
+  autoinclude {
+    dependency "controller" {
+      config_path = unit.controller.path
+
+      # Mock outputs let init/validate/plan succeed before the controller
+      # unit has been applied.
+      mock_outputs = {
+        juju_cli_setup_command = "true"
+        connection = {
+          controller_addresses = "localhost:17070"
+          username             = "admin"
+          password             = "changeme"
+          ca_certificate       = "changeme"
+        }
+      }
+      mock_outputs_allowed_terraform_commands = ["init", "validate"]
+    }
+
+    dependency "network" {
+      config_path = unit.network.path
+
+      mock_outputs = {
+        model_uuid = "00000000-0000-0000-0000-000000000000"
+      }
+      mock_outputs_allowed_terraform_commands = ["init", "validate"]
+    }
+
+    # Ordering dependency only: machines must be allocated before packages
+    # can be installed on them. The packages themselves come from the
+    # `packages` fields of the kiosk and compute partition settings.
+    dependency "slurm" {
+      config_path = unit.slurm.path
+
+      mock_outputs = {
+        kiosk              = { app_name = "login" }
+        compute_partitions = {}
+        packages           = {}
+      }
+      mock_outputs_allowed_terraform_commands = ["init", "validate"]
+    }
+
+    inputs = {
+      packages               = dependency.slurm.outputs.packages
+      juju_cli_setup_command = dependency.controller.outputs.juju_cli_setup_command
+      juju_cli_password      = dependency.controller.outputs.connection.password
+      model_uuid             = dependency.network.outputs.model_uuid
+    }
+  }
+}

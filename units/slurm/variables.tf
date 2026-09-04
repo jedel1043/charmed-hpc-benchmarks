@@ -35,6 +35,7 @@ variable "compute_partitions" {
   type = map(object({
     constraints = optional(string)
     units       = optional(number, 1)
+    packages    = optional(list(string), [])
   }))
   default = {
     "default" : {
@@ -49,6 +50,7 @@ variable "kiosk" {
   type = object({
     app_name = optional(string, "login")
     units    = optional(number, 1)
+    packages = optional(list(string), [])
   })
   default  = {}
   nullable = false

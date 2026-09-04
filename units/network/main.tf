@@ -67,3 +67,13 @@ resource "juju_model" "charmed-hpc" {
     storage-default-filesystem-source = "rootfs"
   }
 }
+
+
+resource "tls_private_key" "benchmark" {
+  algorithm = "ED25519"
+}
+
+resource "juju_ssh_key" "benchmark" {
+  model_uuid = juju_model.charmed-hpc.uuid
+  payload    = "${trimspace(tls_private_key.benchmark.public_key_openssh)} charmed-hpc-benchmarks"
+}

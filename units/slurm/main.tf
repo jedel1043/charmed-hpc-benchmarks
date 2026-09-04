@@ -1,6 +1,30 @@
 # Copyright 2026 Canonical Ltd.
 # See LICENSE file for licensing details.
 
+# Project the extended settings onto the types the remote module expects:
+# `packages` is handled by this unit, not the module.
+locals {
+  compute_partitions = {
+    for name, partition in var.compute_partitions : name => {
+      constraints = partition.constraints
+      units       = partition.units
+    }
+  }
+  kiosk = {
+    app_name = var.kiosk.app_name
+    units    = var.kiosk.units
+  }
+
+  # Packages to install per application, keyed by application name. Only
+  # applications that actually have packages are included.
+  packages = {
+    for app, pkgs in merge(
+      { for name, partition in var.compute_partitions : name => partition.packages },
+      { var.kiosk.app_name : var.kiosk.packages },
+    ) : app => pkgs if length(pkgs) > 0
+  }
+}
+
 module "slurm" {
   source = "git::https://github.com/canonical/charmed-hpc-terraform//modules/slurm?ref=e585d13f4a82289f6bfcd20c39f178bc5db6b30c"
 
@@ -21,10 +45,10 @@ module "slurm" {
   }
 
   # Optional settings for the kiosk node.
-  kiosk = var.kiosk
+  kiosk = local.kiosk
 
   # Compute partitions to be deployed.
-  compute_partitions = var.compute_partitions
+  compute_partitions = local.compute_partitions
 }
 
 # Since the filesystem client is a subordinate charm, it uses
